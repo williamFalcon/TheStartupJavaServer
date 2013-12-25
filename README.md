@@ -1,4 +1,4 @@
-WAFJavaServer
+THE STARTUP JAVA SERVER
 =================================
 
 Simple Java TCP/HTTP server wired for MYSQL and JSON replies
@@ -46,7 +46,7 @@ To use WITHOUT MYSQL
 For even faster use:
 
 1. Open terminal and type:
-2. java -jar WASAMIHttpServer.jar
+2. java -jar TheStartupJavaServer.jar
 
 
 BUILT IN DEPENDENCIES
