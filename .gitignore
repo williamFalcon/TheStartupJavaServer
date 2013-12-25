@@ -1,6 +1,5 @@
 *.class
 
 # Eclipse #
-.project
 .settings
 .DS_Store
