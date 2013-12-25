@@ -72,7 +72,7 @@ public class MYSQLConnector {
 	 * @return arrayList of objects
 	 * @author William Falcon
 	 */
-	public ArrayList<Object> getResultsFromQuery(String sqlQuery, Object template) throws Exception{
+	public ArrayList<Object> getObjectResultsFromQuery(String sqlQuery, Object template) throws Exception{
 
 		//Init results
 		ArrayList<Object> results = new ArrayList<Object>();
@@ -118,6 +118,44 @@ public class MYSQLConnector {
 		return results;
 	}
 
+	/**
+	 * Executes a generic SQL query. 
+	 * 
+	 * If results requested, they are returned in an arrayList, otherwise the list is empty
+	 * @param sqlQuery
+	 * @param Object template
+	 * @return arrayList of objects
+	 * @author William Falcon
+	 */
+	public ArrayList<Object> executeGenericQuery(String sqlQuery) throws Exception{
+
+		ArrayList<Object> results = new ArrayList<Object>();
+
+		//Connect and execute query
+		Connection connection = DriverManager.getConnection(CONNECTION_URL+DB_NAME,DB_USER_NAME,USER_PASSWORD);
+		Statement statement = connection.createStatement();
+
+		//Handle queries without results needed
+		if (sqlQuery.contains("DELETE")) {
+			statement.executeUpdate(sqlQuery);
+			return null;
+		}
+
+		//execute sql query
+		ResultSet resultSet = statement.executeQuery(sqlQuery);
+
+		//Parse results
+		results = MYSQLParser.resultSetToArrayList(resultSet);
+
+		//Close resources
+		connection.close();
+		statement.close();
+		resultSet.close();
+
+		//Return results
+		return results;
+	}
+	
 	/**
 	 * Inserts list of objects into a specific table
 	 * @param tableName

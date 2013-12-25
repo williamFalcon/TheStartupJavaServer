@@ -2,8 +2,10 @@ package dbConnectors;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class MYSQLParser {
 
@@ -69,5 +71,36 @@ public class MYSQLParser {
 
 		//Return the result
 		return result;
+	}
+	
+	/**
+	 * Transfers a resultSet into an arrayList of results
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	public static ArrayList<Object> resultSetToArrayList(ResultSet rs) throws SQLException{
+
+		//Get meta from resultSet
+		ResultSetMetaData md = rs.getMetaData();
+		int columns = md.getColumnCount();
+		
+		ArrayList<Object> results = new ArrayList<Object>();
+		
+		//Parse results
+		while (rs.next()){
+			
+			//Results will be in a generic hashMap
+			HashMap<String, Object> row = new HashMap<String, Object>(columns);
+			
+			//map column names to rows
+			for(int i=1; i<=columns; ++i){ 
+				row.put(md.getColumnName(i),rs.getObject(i));
+			}
+			
+			results.add(row);
+		}
+
+		return results;
 	}
 }

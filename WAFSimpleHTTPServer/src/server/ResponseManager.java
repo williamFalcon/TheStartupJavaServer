@@ -1,6 +1,11 @@
 package server;
 
+import java.io.PrintWriter;
+
 import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.Request;
+
 import com.google.gson.Gson;
 
 /**
@@ -11,26 +16,28 @@ import com.google.gson.Gson;
 public abstract class ResponseManager {
 
 	/**
-	 * Encodes and sends an object as JSON
+	 * Sends a JSON response for an object (200)
 	 * @param objectToEncode
-	 * @param response
 	 * @throws Exception
 	 */
-	public static void sendJSONResponse(Object objectToEncode, HttpServletResponse response) throws Exception{
+	public static void sendJSONResponse(Object objectToEncode, HttpServletResponse response, Request baseRequest) throws Exception{
 
 		//Encode object into JSON
 		String jsonString = new Gson().toJson(objectToEncode);
-		byte[] utf8JsonString = jsonString.getBytes("UTF8");
 
-		//Send JSON response
-		response.setContentLength(utf8JsonString.length);
+		//Set http headers
 		response.setContentType("application/json"); 
 		response.setStatus(HttpServletResponse.SC_OK);
-		response.setHeader("last-modified:", HelperMethods.now());
 		
 		try {
-			//Actually send the response
-			response.getWriter().write(jsonString);
+			
+			//Let's jetty know the request was finished so we can move on
+			baseRequest.setHandled(true);
+
+			//Write response and close resource
+			PrintWriter outPrintWriter = response.getWriter();
+			outPrintWriter.print(jsonString);
+			outPrintWriter.flush();
 
 		} catch (Exception e) {
 
