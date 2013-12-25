@@ -46,7 +46,7 @@ To use WITHOUT MYSQL
 For even faster use:
 
 1. Open terminal and type:
-2. java -jar WAFSimpleHTTPServer.jar
+2. java -jar WASAMIHttpServer.jar
 
 
 BUILT IN DEPENDENCIES
