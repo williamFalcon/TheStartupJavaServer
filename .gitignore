@@ -1,6 +1,7 @@
 *.class
 
-# Package Files #
-*.jar
-*.war
-*.ear
+# Eclipse #
+.project
+.settings
+.DS_Store
+.classpath
