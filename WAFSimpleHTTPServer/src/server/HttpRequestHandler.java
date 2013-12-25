@@ -40,12 +40,10 @@ public class HttpRequestHandler extends AbstractHandler{
 
 			//Route GET requests
 			if (baseRequest.getMethod().equals("GET")) {
-				baseRequest.setHandled(true);
 				GETManager.processGETRequests(target, baseRequest, request, response, mysql);
 
 				//Process POST requests
 			}else if (baseRequest.getMethod().equals("POST")) {
-				baseRequest.setHandled(true);
 				POSTManager.processPOSTRequests(target, baseRequest, request, response, mysql);
 			}
 
