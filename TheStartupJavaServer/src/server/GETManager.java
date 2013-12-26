@@ -62,7 +62,7 @@ public abstract class GETManager {
 			mysql.insertObject("user", user);
 			
 			//SAMPLE MYSQL get result from query
-			ArrayList<Object> responseArray = mysql.executeGenericQuery("SELECT * FROM Sample.user WHERE social LIKE ?", new ArrayList(Arrays.asList("207")));
+			ArrayList<Object> responseArray = mysql.executeGenericQuery("SELECT * FROM Sample.user",null);
 			
 			//Send JSON response
 			ResponseManager.sendJSONResponse(responseArray, response, baseRequest);

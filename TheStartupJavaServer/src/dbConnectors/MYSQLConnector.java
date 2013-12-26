@@ -97,13 +97,14 @@ public class MYSQLConnector {
 		//execute sql query
 		ResultSet resultSet = statement.executeQuery(sqlQuery);
 
+		Class<?> newClass = Class.forName(template.getClass().getName());
+		Object result;
+		
 		//Extract results
 		while (resultSet.next()) {
 
 			//Get object back
-			Class<?> newClass = Class.forName(template.getClass().getName());
-
-			Object result = newClass.newInstance();
+			result = newClass.newInstance();
 			result = MYSQLParser.mapSQLResultToObject(result, resultSet);
 
 			//Add to results
@@ -265,11 +266,12 @@ public class MYSQLConnector {
 		//Only the fields to insert for the object
 		ArrayList<Field> mainObjectQueryFields = new ArrayList<Field>();
 
+		String type;
 		//Remove all array types
 		for (Field field : objectFields) {
 
 			//Get the name of that type
-			String type = field.getType().getName();
+			type = field.getType().getName();
 
 			//If the array has the field, add to array for main insert
 			if (allowedFields.contains(type) && field.getName()!="myId") {
@@ -280,12 +282,13 @@ public class MYSQLConnector {
 		//Create joint columns string (id, name, etc...) and (?,?)
 		String columns = new String();
 		String questionMarks = new String();
-
+		Field field = null;
+		
 		//Iterate over fields
 		for (int i=0; i<mainObjectQueryFields.size(); i++) {
 
 			//Get field
-			Field field = mainObjectQueryFields.get(i);
+			field = mainObjectQueryFields.get(i);
 
 			//If the last object don't add a comma
 			if (i==mainObjectQueryFields.size()-1) {
@@ -305,15 +308,17 @@ public class MYSQLConnector {
 		//Create prepared statement
 		PreparedStatement genericStatement = privateConnection.prepareStatement("INSERT INTO " + tableName + " (" + columns + ") VALUES (" +questionMarks+ ")");
 
+		Object value = null;
+		
 		//For each field add to prepared statement
 		for (int i = 0; i < mainObjectQueryFields.size(); i++) {
 
 			//Get the field
-			Field field = mainObjectQueryFields.get(i);
+			mainObjectQueryFields.get(i);
 			field.setAccessible(true);
 
 			//Get the value at that field
-			Object value = field.get(object);
+			value = field.get(object);
 
 			//Set the object at that prepared statement index
 			genericStatement.setObject(i+1, value);
@@ -406,13 +411,14 @@ public class MYSQLConnector {
 
 		//Init myId
 		String myId = new String();
-
+		String type = new String();
+		
 		//Remove all array types
 		for (Field field : objectFields) {
 
 			field.setAccessible(true);
 			//Get the name of that type
-			String type = field.getType().getName();
+			type = field.getType().getName();
 
 			//If the array has the field, add to array for main insert
 			if (allowedFields.contains(type) && !field.getName().equals("myId")) {
@@ -428,11 +434,13 @@ public class MYSQLConnector {
 		//Create joint columns string (id, name, etc...) and (?,?)
 		String columns = new String();
 
+		Field field = null;
+		
 		//Iterate over fields
 		for (int i=0; i<mainObjectQueryFields.size(); i++) {
 
 			//Get field
-			Field field = mainObjectQueryFields.get(i);
+			field = mainObjectQueryFields.get(i);
 
 			//If the last object don't add a comma
 			if (i==mainObjectQueryFields.size()-1) {
@@ -452,15 +460,17 @@ public class MYSQLConnector {
 		//Create prepared statement
 		PreparedStatement genericStatement = privateConnection.prepareStatement("UPDATE " + tableName + "  SET " + columns + " WHERE myId = "+myId);
 
+		Object value = new Object();
+		
 		//For each field add to prepared statement
 		for (int i = 0; i < mainObjectQueryFields.size(); i++) {
 
 			//Get the field
-			Field field = mainObjectQueryFields.get(i);
+			mainObjectQueryFields.get(i);
 			field.setAccessible(true);
 
 			//Get the value at that field
-			Object value = field.get(object);
+			value = field.get(object);
 
 			//Set the object at that prepared statement index
 			genericStatement.setObject(i+1, value);
