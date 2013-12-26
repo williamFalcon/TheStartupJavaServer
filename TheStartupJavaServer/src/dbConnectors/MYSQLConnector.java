@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Abstracts SQL connections
@@ -119,43 +120,77 @@ public class MYSQLConnector {
 	}
 
 	/**
-	 * Executes a generic SQL query. 
+	 * Executes any sql query.
+	 * Takes an array of parameters to apply to query.
+	 * Query should have a question mark in every parameter.
 	 * 
-	 * If results requested, they are returned in an arrayList, otherwise the list is empty
+	 * Sample use:  sql.executeGenericQuery("SELECT * FROM db.user WHERE name LIKE ?", new ArrayList(Arrays.asList("bob")));
+	 * 
 	 * @param sqlQuery
-	 * @param Object template
-	 * @return arrayList of objects
-	 * @author William Falcon
+	 * @param preparedStatementParameters
+	 * @return
+	 * @throws Exception
 	 */
-	public ArrayList<Object> executeGenericQuery(String sqlQuery) throws Exception{
+	public ArrayList<Object> executeGenericQuery(String sqlQuery, ArrayList<String> preparedStatementParameters) throws Exception{
 
+		//Standardize query
+		sqlQuery = sqlQuery.toLowerCase();
+		
 		ArrayList<Object> results = new ArrayList<Object>();
+		ResultSet resultSet = null;
+		Connection connection = null;
+		PreparedStatement statement = null;
+		
+		try {
+			//Connect and execute query
+			connection = DriverManager.getConnection(CONNECTION_URL+DB_NAME,DB_USER_NAME,USER_PASSWORD);
+			statement = connection.prepareStatement(sqlQuery);
 
-		//Connect and execute query
-		Connection connection = DriverManager.getConnection(CONNECTION_URL+DB_NAME,DB_USER_NAME,USER_PASSWORD);
-		Statement statement = connection.createStatement();
+			//Add the parameter values to the statement
+			if (preparedStatementParameters!=null) {
+				for (int i = 0; i < preparedStatementParameters.size(); i++) {
+					statement.setString(i+1, preparedStatementParameters.get(i));
+				}
+			}
 
-		//Handle queries without results needed
-		if (sqlQuery.contains("DELETE")) {
-			statement.executeUpdate(sqlQuery);
-			return null;
+			//Handle all other cases except select
+			if (!sqlQuery.contains("select")) {
+				statement.executeUpdate();
+
+				//Handle select statement
+			}else {
+				//execute sql query
+				resultSet = statement.executeQuery();
+
+				//Parse results
+				results = MYSQLParser.resultSetToArrayList(resultSet);
+			}
+			
+		}catch (Exception e) {
+			
+			//Pass the exception up
+			throw e;
+			
+		}finally{
+			
+			//Close resources whether successful or not
+			if (connection!=null) {
+				connection.close();
+			}
+			
+			if (statement!=null) {
+				statement.close();
+			}
+			
+			if (resultSet!=null) {
+				resultSet.close();
+			}
 		}
-
-		//execute sql query
-		ResultSet resultSet = statement.executeQuery(sqlQuery);
-
-		//Parse results
-		results = MYSQLParser.resultSetToArrayList(resultSet);
-
-		//Close resources
-		connection.close();
-		statement.close();
-		resultSet.close();
-
+		
 		//Return results
 		return results;
 	}
-	
+
 	/**
 	 * Inserts list of objects into a specific table
 	 * @param tableName

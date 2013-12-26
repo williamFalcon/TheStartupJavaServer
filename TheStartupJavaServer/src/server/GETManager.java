@@ -1,6 +1,7 @@
 package server;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -61,7 +62,7 @@ public abstract class GETManager {
 			mysql.insertObject("user", user);
 			
 			//SAMPLE MYSQL get result from query
-			ArrayList<Object> responseArray = mysql.executeGenericQuery("SELECT * FROM user");
+			ArrayList<Object> responseArray = mysql.executeGenericQuery("SELECT * FROM Sample.user WHERE social LIKE ?", new ArrayList(Arrays.asList("207")));
 			
 			//Send JSON response
 			ResponseManager.sendJSONResponse(responseArray, response, baseRequest);
