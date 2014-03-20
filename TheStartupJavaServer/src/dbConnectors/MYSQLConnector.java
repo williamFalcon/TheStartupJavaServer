@@ -314,7 +314,7 @@ public class MYSQLConnector {
 		for (int i = 0; i < mainObjectQueryFields.size(); i++) {
 
 			//Get the field
-			mainObjectQueryFields.get(i);
+			field = mainObjectQueryFields.get(i);
 			field.setAccessible(true);
 
 			//Get the value at that field
