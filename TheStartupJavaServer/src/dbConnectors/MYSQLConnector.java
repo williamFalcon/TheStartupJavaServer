@@ -8,6 +8,13 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import settings.MYSQLDevSettings;
+import settings.MYSQLProductionSettings;
+import settings.ProjectSettings;
 
 /**
  * Abstracts SQL connections
@@ -16,11 +23,12 @@ import java.util.Arrays;
  */
 public class MYSQLConnector {
 
+	
 	//DB settings
-	private static final String DB_USER_NAME = "root";
-	private static final String USER_PASSWORD = "";
-	private static final String CONNECTION_URL = "jdbc:mysql://localhost:3306/";
-	private static final String DB_NAME = "Sample";
+	private String DB_USER_NAME;
+	private String USER_PASSWORD;
+	private String CONNECTION_URL;
+	private String DB_NAME;
 
 	//JDBC Driver
 	private static final String DRIVER = "com.mysql.jdbc.Driver";
@@ -37,6 +45,22 @@ public class MYSQLConnector {
 
 		//Connect JDBC driver
 		connectJDBCDriver();
+		
+		//set SQL database parameters based on the launch environment (dev vs production)
+		if (ProjectSettings.launchForProduction) {
+		
+			DB_USER_NAME = MYSQLProductionSettings.DB_USER_NAME;
+			USER_PASSWORD = MYSQLProductionSettings.USER_PASSWORD;
+			CONNECTION_URL = MYSQLProductionSettings.CONNECTION_URL;
+			DB_NAME = MYSQLProductionSettings.DB_NAME;
+		
+		}else {
+			
+			DB_USER_NAME = MYSQLDevSettings.DB_USER_NAME;
+			USER_PASSWORD = MYSQLDevSettings.USER_PASSWORD;
+			CONNECTION_URL = MYSQLDevSettings.CONNECTION_URL;
+			DB_NAME = MYSQLDevSettings.DB_NAME;
+		}
 	}
 
 	/**
@@ -199,7 +223,7 @@ public class MYSQLConnector {
 	 * @throws Exception
 	 * @author waf04
 	 */
-	public void insertObjectList(String tableName, ArrayList<?> objects) throws Exception{
+	public void insertJSONObjectList(String tableName, ArrayList<HashMap<String, Object>> objects) throws Exception{
 
 		//Init connection
 		Connection connection = DriverManager.getConnection(CONNECTION_URL+DB_NAME,DB_USER_NAME,USER_PASSWORD);
@@ -207,14 +231,14 @@ public class MYSQLConnector {
 		int count =0;
 
 		//Iterate over objects
-		for (Object object : objects) {
+		for (HashMap<String, Object> object : objects) {
 
 			//Track progress
 			count ++;
 			System.out.println(count+"/"+objects.size());
 
 			//Insert
-			insertObject(object, tableName, connection);
+			insertJSONObject(object, tableName, connection);
 		}
 
 		//Close resources
@@ -229,76 +253,72 @@ public class MYSQLConnector {
 	 * @throws Exception
 	 * @author waf04
 	 */
-	public void insertObject(String tableName, Object object) throws Exception{
+	public void insertJSONObject(String tableName, HashMap<String, Object> object) throws Exception{
 
 		//Create connection
 		Connection connection = DriverManager.getConnection(CONNECTION_URL+DB_NAME,DB_USER_NAME,USER_PASSWORD);
 
 		//Insert object
-		insertObject(object, tableName, connection);
+		insertJSONObject(object, tableName, connection);
 
 		//Close resources
 		connection.close();
 	}
 
 	/**
-	 * Inserts ANY object into the database using it's own prepared statement
+	 * Inserts ANY object into the database using its own prepared statement
 	 * It uses reflection to create the query and the prepared statement
 	 * 
-	 * myId will NOT be inserted (allow auto increment to do its thing)
+	 * id will NOT be inserted (allow auto increment to do its thing)
 	 * @param object
 	 * @return
 	 * @author waf04
 	 */
-	private void insertObject(Object object, String tableName, Connection connection) throws Exception{
-
-		//Get the object's fields
-		Field[] objectFields = object.getClass().getDeclaredFields();
+	private void insertJSONObject(HashMap<String, Object> object, String tableName, Connection connection) throws Exception{
 
 		//Set which fields are not relationships
-		ArrayList<String>allowedFields = new ArrayList<String>();
-		allowedFields.add("int");
-		allowedFields.add("java.lang.String");
-		allowedFields.add("double");
-		allowedFields.add("java.lang.Double");
-		allowedFields.add("java.lang.Integer");
+		Set<String> allowedFields = ProjectSettings.allowedFields;
 
 		//Only the fields to insert for the object
-		ArrayList<Field> mainObjectQueryFields = new ArrayList<Field>();
+		ArrayList<Object> objectValues = new ArrayList<Object>();
 
 		String type;
-		//Remove all array types
-		for (Field field : objectFields) {
-
+		Object value;
+		
+		//make sure only allowed values are inserted (removes relationships)
+		for (String key : object.keySet()) {
+			
 			//Get the name of that type
-			type = field.getType().getName();
+			value = object.get(key);
+			
+			type = value.getClass().getName();
 
 			//If the array has the field, add to array for main insert
-			if (allowedFields.contains(type) && field.getName()!="myId") {
-				mainObjectQueryFields.add(field);
+			if (allowedFields.contains(type) && key !=ProjectSettings.sqlObjectPrimaryKeyName) {
+				objectValues.add(value);
 			}
 		}
 
 		//Create joint columns string (id, name, etc...) and (?,?)
-		String columns = new String();
-		String questionMarks = new String();
-		Field field = null;
+		StringBuilder columns = new StringBuilder();
+		StringBuilder questionMarks = new StringBuilder();
 		
 		//Iterate over fields
-		for (int i=0; i<mainObjectQueryFields.size(); i++) {
+		for (int i=0; i<objectValues.size(); i++) {
 
 			//Get field
-			field = mainObjectQueryFields.get(i);
+			value = objectValues.get(i);
 
 			//If the last object don't add a comma
-			if (i==mainObjectQueryFields.size()-1) {
-				columns+= field.getName();
-				questionMarks += "?";
+			if (i==objectValues.size()-1) {
+				columns.append(value.toString());
+				questionMarks.append("?");
+
 			}else {
 
 				//Append to string
-				columns += field.getName() + ", ";
-				questionMarks += "?,";
+				columns.append(value.toString()  + ", " );
+				questionMarks.append("?");
 			}
 		}
 
@@ -307,18 +327,11 @@ public class MYSQLConnector {
 
 		//Create prepared statement
 		PreparedStatement genericStatement = privateConnection.prepareStatement("INSERT INTO " + tableName + " (" + columns + ") VALUES (" +questionMarks+ ")");
-
-		Object value = null;
 		
 		//For each field add to prepared statement
-		for (int i = 0; i < mainObjectQueryFields.size(); i++) {
+		for (int i = 0; i < objectValues.size(); i++) {
 
-			//Get the field
-			field = mainObjectQueryFields.get(i);
-			field.setAccessible(true);
-
-			//Get the value at that field
-			value = field.get(object);
+			value = objectValues.get(i);
 
 			//Set the object at that prepared statement index
 			genericStatement.setObject(i+1, value);
@@ -421,10 +434,10 @@ public class MYSQLConnector {
 			type = field.getType().getName();
 
 			//If the array has the field, add to array for main insert
-			if (allowedFields.contains(type) && !field.getName().equals("myId")) {
+			if (allowedFields.contains(type) && !field.getName().equals(ProjectSettings.sqlObjectPrimaryKeyName)) {
 				mainObjectQueryFields.add(field);
 
-			}else if (field.getName().equals("myId")) {
+			}else if (field.getName().equals(ProjectSettings.sqlObjectPrimaryKeyName)) {
 				//Get myId
 				Integer myIdInt = field.getInt(object);
 				myId = Integer.toString(myIdInt);
